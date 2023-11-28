@@ -7,7 +7,7 @@ You find some code to start in the `main.py` and the tasks are described here.
 Please also refer to the [PyBullet Quickstart Guide](https://docs.google.com/document/d/10sXEhzFRSnvFcl3XxNGhnD4N2SedqwdAvK3dsihxVUA/)
 for further explanations on the basic PyBullet functions.
 
-## Task 1: Understanding the `main.py` and URDF files
+## 1: Understanding the `main.py` and URDF files
 
 Please take some time to get familiar with the existing code in the `main.py`.
 
@@ -16,12 +16,15 @@ Please take some time to get familiar with the existing code in the `main.py`.
 - configure gravity
 - load a ground plane from the [URDF file](https://github.com/bulletphysics/bullet3/blob/39b8de74df93721add193e5b3d9ebee579faebf8/examples/pybullet/gym/pybullet_data/plane.urdf)
 - load the Franka Panda robot from the [URDF file](https://github.com/bulletphysics/bullet3/blob/39b8de74df93721add193e5b3d9ebee579faebf8/examples/pybullet/gym/pybullet_data/franka_panda/panda.urdf)
-- calling the stepSimulation method indefinitely in a while loop
+- calling a `simulate()` method, which wraps around pyBullet's `stepSimulation()` method to progress the simulation
 
 When you run the script (`python main.py`), it will open up the simulator GUI.
-It waits for you to hit Enter and then proceeds into the while loop.
-You will notice how the robot simply falls - due to gravity. Whoops!
+It waits for you to hit Enter and then starts to simulate.
+You will notice how the robot moves a little.
+If you simulate long enough, it eventually falls - due to gravity. Whoops!
 Let's take a closer look.
+
+(You can stop the program by hitting Ctrl+C in the terminal if you don't want to wait for it to finish.)
 
 ### Understanding URDF - links and joints
 
@@ -66,21 +69,23 @@ to see how to modify the following command so that the base of the robot is fixe
 robot_id = p.loadURDF('franka_panda/panda.urdf')
 ```
 
-Implement the change and see if it stays upright this time.
+Implement the change and see if it stays static this time.
 
 Hint: the Python values for `True` and `False` are interpreted as `1` and `0`, so
 you do not need to provide actual integer values.
 
-## Task 2: Understanding the joint values
+## 2: Understanding the joint values
 
 Our robot should have a static base now, but the initial configuration is a 
 bit awkward.
-Perhaps we can put the robot in a more suitable configuration to begin with.
+Perhaps we can put the robot in a more suitable configuration before the start of 
+the simulation.
 
 As mentioned before, the arm has 7 DoF.
-These are the following:
+These are illustrated in the following figure:
 
 ![Franka Panda](../assets/franka-7dof.jpg)
+
 (Image from [Ho et al. (2022)](http://dx.doi.org/10.1109/ACCESS.2023.3234104))
 
 ### Joint range / limits
@@ -90,18 +95,160 @@ This is based on the real robot and defined in the URDF file.
 You may have noticed that `lower limit` and
 `upper limit` will be shown when you use `print_joint_info(robot_id)`.
 For example, the first joint has a lower limit of -2.9671 and an upper limit of
-2.9671.
-
+2.9671. 
 As the joints are revolute joints, the values are in radian. 
-A value of $\pi$ (3.1415) equals to 180 degree.  
+A value of $\pi$ (3.1415) equals to 180 degree.
+
+In robotics applications, we typically do not want to operate the robot close to its joint limits.
+Many algorithms therefore try to avoid them on purpose.
+When loading the robot into pybullet, the joint states default to zero.
+Inspecting the range of the joints, this means that in the "all-zero" configuration joint 4 and joint 6 are actually at or close to their limit.
 
 ### Resetting the joint states
 
-Obseveration: Robot is falling. What, why, still?
+Let's reset the joint states before the start of the simulation so that the robot is in a suitable configuration.
+A typical starting configuration for the Franka Panda robot would be the following:
 
-## Task 3: Joint motor control
+```python
+ROBOT_HOME_CONFIG = [0.0, -0.7854, 0.0, -2.3562, 0.0, 1.5708, 0.7854]
+```
+
+Note how each joint is well within its limits.
+This is a pose where the robot is ready to move in any direction and the gripper is at the front and pointing exactly downwards.
+Let's implement it.
+
+The home configuration is already defined in `util.py`.
+The indices of the joint values in the list correspond to the joint indices from the URDF.
+For setting the joint angles, we can use pyBullet's function `resetJointState()` as follows:
+```python
+p.resetJointState(robot_id, joint_id, target_joint_value)
+```
+
+Write a loop that sets all joint angles according to the home configuration - this should be after the robot is loaded, but before the simulation is started.
+
+Note that `resetJointState()` is a hard reset - you should never do this inbetween calls to `stepSimulation()`, as information about the velocities, forces, etc. will be inconsistent.
+
+To make the robot move, we instead have to use the joint motors.
+
+
+## 3: Joint motor control
+
+To make the robot move, we actually need to control the motors!
+In robots, we typically have [servomotors](https://en.wikipedia.org/wiki/Servomotor). 
+PyBullet offers functions for low-level motor control, including velocity control, position control, or force/torque control.
+The function `p.setJointMotorControl2()` covers all of those cases.
+In this tutorial, we will only touch upon velocity and position control.
+
+![control loops](../assets/control-loop.png)
+
+Essentially, we have a closed-loop control system, where the input/output is position and/or velocity.
+The "process" in the picture is our motor.
 
 ### Stay where you are
 
+In PyBullet's Quickstart Guide, it states that "by default, each revolute joint and prismatic joint is motorized using a velocity motor" - this controls towards a joint velocity of 0 and therefore makes our robot actually stand still.
 
-### Move somewhere else
+Let's try to see what happens if we disable that! We can do this by setting the force of each joint motor controller to zero:
+
+```python
+for joint_id in range(7):
+    p.setJointMotorControl2(
+        robot_id, 
+        joint_id, 
+        controlMode=p.VELOCITY_CONTROL, 
+        force=0
+    )
+```
+
+See how the robot is suddenly falling to the ground immediately as the simulation starts?
+Effectively, PyBullet's preset made our robot counter gravity and stay where it is.
+
+Note that in contrast to the `resetJointState()` method, the `setJointMotorControl2()` method can also be called while the simulation is running (i.e., inbetween steps).
+It will then apply to all following simulation steps until another call to the function overrides the controller.
+
+### Using velocity control to move
+
+Let's use velocity control for something more useful than making our robot fall. :)
+
+Instead of the above code, let's control the first joint to actually move with a certain target velocity.
+Try the following:
+```python
+joint_id = 0
+p.setJointMotorControl2(
+    robot_id, 
+    joint_id, 
+    controlMode=p.VELOCITY_CONTROL,
+    targetVelocity=1,
+    force=100
+)
+```
+
+Note how we additionally provided the property `targetVelocity`.
+You will see that the joint moves at the desired velocity, unless you set it too high.
+However, at some point it simply stops - because it arrives at the joint limit. 
+
+If we want to move the joint to a particular position, we would need to constantly check whether we are there already, and if yes, set the target velocity to zero again.
+
+### Checking the joint state
+
+The check where we currently are, pyBullet has the function `getJointState()`.
+It returns a list, of which the first element is the joint position (see the Quickstart Guide).
+
+The procedure for moving the joint to a target position of 1 could look as follows:
+- set target velocity to 1
+- get joint position
+- while joint position < 1 (target position)
+  - simulate one step
+  - get joint position
+- set target velocity to 0
+
+Go ahead and implement this in your script.
+
+Discuss: How well does it work? Do you arrive accurately at your target position of 1?
+
+### Using position control to move
+
+Instead of velocity control, we can also use position control to move towards a target position.
+The controller directly uses the error between the current and the target position to drive the system towards the target.
+Hence, this should be more accurate than what we've tried before.
+You may have noticed that we overshot our goal and ended up with a position slightly above 1.
+
+
+Let's now implement position control instead.
+The command should look as follows:
+```python
+joint_id = 0
+p.setJointMotorControl2(
+    robot_id, 
+    joint_id, 
+    controlMode=p.POSITION_CONTROL,
+    targetPosition=1,
+    force=100
+)
+simulate(seconds=10)
+```
+
+You do not need to keep track the joint position anymore, as the controller will automatically make the robot stay in the target position.
+The code therefore looks a bit simpler.
+
+If you look closely, you notice that the robot moves extremely fast initially, and then slows down as it reaches the goal.
+This is due to the position controller only amplifying the error between current position and target to determine the motor force.
+
+Position control can in fact incorporate a target velocity as well, and use both errors (difference in position as well as difference in velocity) to drive the motor.
+However, this needs a suitable configuration of the position gain and velocity gain parameters and delves into the field of control engineering.
+
+Here, we will simply limit the maximum velocity to achieve a relatively smooth motion.
+Add the argument `maxVelocity=1` to the above command.
+
+### Move all joints
+
+Write a function `move_to_joint_pos()` that gets a target joint configuration (list of all seven joint positions) as input and controls the robot to move to that configuration.
+Use position control with a maximum velocity.
+
+The function should call `simulate()` by itself, check the joint state after each step, and return when the position is approximately achieved.
+
+This is pretty cool, because later on you can simply call the function to move anywhere you want, and your high-level code will look very clean and intuitive - all the low-level code is encapsulated in this function.
+
+### In practice
+
+synchronised PTP to limit the jerk/acceleration

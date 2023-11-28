@@ -3,6 +3,8 @@ import pybullet as p
 
 JOINT_TYPES = ["REVOLUTE", "PRISMATIC", "SPHERICAL", "PLANAR", "FIXED"]
 
+ROBOT_HOME_CONFIG = [0.0, -0.7854, 0.0, -2.3562, 0.0, 1.5708, 0.7854]
+
 
 def get_joint_info(body_id, joint_id=None):
     """
