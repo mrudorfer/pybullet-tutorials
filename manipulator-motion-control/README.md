@@ -99,6 +99,14 @@ For example, the first joint has a lower limit of -2.9671 and an upper limit of
 As the joints are revolute joints, the values are in radian. 
 A value of $\pi$ (3.1415) equals to 180 degree.
 
+The limits of our arm joints as per the URDF file are the following:
+
+| joint | 1       | 2        | 3       | 4       | 5        | 6        | 7        |
+|-------|---------|----------|---------|---------|----------|----------|----------|
+| lower | -2.9671 | -1.8326  | -2.9671 | -3.1416 | -2.9671 | -0.0873 | -2.9671 |
+| upper | 2.9671  | 1.8326   | 2.9671  | 0.0     | 2.9671  | 3.8223  | 2.9671  |
+
+
 In robotics applications, we typically do not want to operate the robot close to its joint limits.
 Many algorithms therefore try to avoid them on purpose.
 When loading the robot into pybullet, the joint states default to zero.
