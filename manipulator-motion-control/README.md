@@ -323,3 +323,16 @@ Ideally, we also smoothen this acceleration profile so that this in turn is diff
 It reduces the [jerk](https://en.wikipedia.org/wiki/Jerk_(physics)) (which is the derivative of the acceleration).
 Motions with minimal jerk are not only best for the joints/motors but are also perceived as very smooth by humans.
 (Think of an elevator - when it starts/stops, it can sometimes feel jerky - that's exactly the same effect.)
+
+### Wrap Up
+
+So, this was a tutorial on joint motor control.
+You learned:
+- how a robot can be described with links and joints in a URDF file
+- how to load the robot in pyBullet, make it static, and reset joint values
+- how to use a velocity controller and a position controller to control individual joints
+- how to make the robot move to a joint position using PTP and synchronised PTP motion control
+
+Now, the motion control that we implemented so far has a few limitations:
+1. We do not have much control over the position and orientation of our end effector (the end bit of the robot where the gripper is attached). You can imagine tasks where we would like to move the gripper to a particular position (in *task* space), or maybe we would even like to follow particular trajectories with the gripper, like a straight line or an arc. This is e.g. important for welding or painting tasks. To accomplish this, we will have to learn more about the *kinematics* of our robot, which will allow us to perform *task space motion control*.
+2. Our motion controller did not consider any obstacles. In order to avoid obstacles, you would need to introduce intermediate waypoints for the robot to go to. The controller is deterministic, so if your trajectory with waypoints works, you can simply repeat it (assuming the environment does not change). That's how most industrial robots are programmed: To do exactly the same task repeatedly and fast. Algorithms that automatically find collision-free waypoints in an environment with obstacles are so-called *motion planning* methods.
