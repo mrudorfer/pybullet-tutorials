@@ -6,6 +6,17 @@ JOINT_TYPES = ["REVOLUTE", "PRISMATIC", "SPHERICAL", "PLANAR", "FIXED"]
 ROBOT_HOME_CONFIG = [0.0, -0.7854, 0.0, -2.3562, 0.0, 1.5708, 0.7854]
 
 
+def get_arm_joint_pos(robot_id):
+    """
+    gets the current joint positions of the robot's arm (first 7 DoF)
+
+    :param robot_id: int, body id of the robot
+    :return: list, joint positions
+    """
+    joint_pos = [p.getJointState(robot_id, i)[0] for i in range(7)]
+    return joint_pos
+
+
 def get_joint_info(body_id, joint_id=None):
     """
     Gives a dictionary with joint information.

@@ -242,13 +242,76 @@ Add the argument `maxVelocity=1` to the above command.
 
 ### Move all joints
 
-Write a function `move_to_joint_pos()` that gets a target joint configuration (list of all seven joint positions) as input and controls the robot to move to that configuration.
+Write a function `move_to_joint_pos()` that gets the robot's body id and a target joint configuration (list of all seven joint positions) as input and controls the robot to move to that configuration.
 Use position control with a maximum velocity.
 
 The function should call `simulate()` by itself, check the joint state after each step, and return when the position is approximately achieved.
+You can use the function `get_arm_joint_pos()` from the `util` module to retrieve the values for all joints in a list.
+To compare the current joint positions with the target joint positions, use the `numpy` function `np.allclose()` with a custom absolute tolerance of 0.0001 as so:
+```
+np.allclose(current_joint_pos, target_joint_pos, atol=0.0001)
+```
+It will return `True` if all values are less than `atol` apart.
 
-This is pretty cool, because later on you can simply call the function to move anywhere you want, and your high-level code will look very clean and intuitive - all the low-level code is encapsulated in this function.
+Having such a `move_to` function is pretty cool, because later on you can simply call the function to move anywhere you want, and your high-level code will look very clean and intuitive - all the low-level code is encapsulated in this function.
 
-### In practice
+Let's try this right away.
+Adjust your main function so that it calls the `move_to_joint_pos()` and moves the robot through three different poses of your choice.
+It should look like so:
+```
+while True:
+  move_to_joint_pos(configuration1)
+  move_to_joint_pos(configuration2)
+  move_to_joint_pos(configuration3)
+  ```
 
-synchronised PTP to limit the jerk/acceleration
+Well done!
+You have now implemented a simple PTP (point-to-point) motion controller. 
+
+### Going further: Synchronised PTP
+
+If you look closely to your robot moving around, you will notice that some joints arrive at the target position earlier than other joints.
+To achieve a smoother motion, we typically use what is called a synchronised PTP. 
+
+In synchronised PTP, only the joint that travels the furthest uses the maximum velocity.
+We reduce the velocity of the other joints such that they will arrive at their target at the same time.
+The following figure illustrates that. 
+It shows the velocity profile of a 3-DoF robot over time for one PTP motion, the joints are color-coded.
+On the left, you see the non-synchronised version, and on the right, you see the synchronised version where we reduce the velocity accordingly.
+
+![Velocity profile of synchronised PTP](../assets/synchronised-ptp.png)
+
+
+Adjust your `move_to_joint_pos()` function such that it calculates the appropriate velocity for each joint.
+The pseudo code would be:
+```
+max_velocity := 1
+distances := element-wise difference between current joint positions and target joint positions
+max_dist := max(distances)
+for each joint:
+  max_vel[joint] := distances[joint] / max_dist * max_velocity
+```
+
+Note that some of the operations might be easier if you convert the lists of joint positions to numpy arrays.
+
+If you look at the robot motion again, you will find that it operates much smoother than before!
+That's great.
+You have now implemented a Synchronised PTP motion controller.
+
+### Synchronised PTP in practice
+
+In simulation, our synchronsied PTP implementation works perfectly fine.
+However, on a real robot, we must also consider the stress on the joints and motors, as a high stress wears out the joints and over time makes the robot less accurate.
+In high-precision tasks such as automotive manufacturing, we really don't want that!
+
+In practice, we would therefore control more finely the start and the end of the trajectory.
+If you look at the synchronised PTP velocity profile above, you can see that we have a starting phase in which the velocity increases and a final phase where the velocity decreases again.
+But the profile has sharp bends, which means it is not differentiable at some points.
+We will therefore have jumps in the acceleration, specifically at time steps 0, 1, 4 and 5.
+These jumps are bad for the motors - they can only change smoothly, and if our controller wants them to change the acceleration immediately, it will quite literally stress them.
+We can alleviate this by smoothening the bends in the above velocity profile and therefore making it differentiable.
+The acceleration profile will then be continuous (but have some bends).
+Ideally, we also smoothen this acceleration profile so that this in turn is differentiable.
+It reduces the [jerk](https://en.wikipedia.org/wiki/Jerk_(physics)) (which is the derivative of the acceleration).
+Motions with minimal jerk are not only best for the joints/motors but are also perceived as very smooth by humans.
+(Think of an elevator - when it starts/stops, it can sometimes feel jerky - that's exactly the same effect.)

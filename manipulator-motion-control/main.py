@@ -39,6 +39,7 @@ def simulate(steps=None, seconds=None, slow_down=True):
 def main():
     # connect to pybullet with a graphical user interface
     p.connect(p.GUI)
+    p.configureDebugVisualizer(p.COV_ENABLE_GUI, 0)
 
     # basic configuration
     p.setGravity(0, 0, -9.81)
