@@ -1,5 +1,7 @@
 # pybullet-tutorials
-A collection of tutorials for using a robotic manipulator arm in pybullet
+This is a collection of tutorials for using a robotic manipulator arm in PyBullet.
+The tutorials are somewhat educational, i.e., they come with some explanations of the 
+methods rather than just explaining how to use the API.
 
 ## PyBullet
 
@@ -11,6 +13,31 @@ PyBullet is a Python wrapper around the [Bullet](https://github.com/bulletphysic
 C++ for best performance.
 The [PyBullet Quickstart Guide](https://docs.google.com/document/d/10sXEhzFRSnvFcl3XxNGhnD4N2SedqwdAvK3dsihxVUA/) is 
 the best resource to learn about the API.
+The start with PyBullet can feel a bit quirky, as it doesn't adhere to Python naming conventions
+and the API documentation is a Google Docs document.
+But it's a great resource and together with these tutorials I hope it will be a smooth experience for you.
+
+## Contents
+
+Currently, there are two tutorials, each of which should take around 1-2 hours depending on how quick you are and 
+how much you play around and try other things.
+
+1. [Manipulator Motion Control](./manipulator-motion-control/README.md)<br/>
+This tutorial walks you through the basics of using pyBullet:
+configuring the world, stepping the simulation,
+understanding the robot arm and its description in the URDF format,
+resetting the joints,
+and finally controlling the motors to simulate the robot's motion.
+
+2. [Simple Pick and Place](./simple-pick-and-place/README.md)<br/>
+In this tutorial, you will learn about configuration space and task space, 
+and how to use forward and inverse kinematics to get from one to the other.
+You will then use these methods to implement a simple pick-and-place task.
+
+To do the tutorials, just follow the installation instructions below and then jump into the respective directories.
+
+Further tutorials will follow when I find some time to create them.
+If you find the tutorials useful, please let me know by starring this repository. :)
 
 ## Installation
 
@@ -20,8 +47,8 @@ Once installed, you can use the terminal (Windows: Anaconda Powershell Prompt) t
 ```commandline
 conda create -n pybullet-tutorials python=3.10
 conda activate pybullet-tutorials
-conda install -c conda-forge numpy
-conda install -c conda-forge pybullet
+conda install -c conda-forge numpy pybullet
 ```
 
-conda env export --from-history
+This should work on both Windows and Linux. Other Python versions probably work fine as well.
+If you run into any trouble, please let me know by creating an issue.
