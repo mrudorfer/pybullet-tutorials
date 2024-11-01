@@ -22,14 +22,14 @@ But it's a great resource and together with these tutorials I hope it will be a 
 Currently, there are two tutorials, each of which should take around 1-2 hours depending on how quick you are and 
 how much you play around and try other things.
 
-1. [Manipulator Motion Control](./manipulator-motion-control/README.md)<br/>
+1. [Manipulator Motion Control](./manipulator-motion-control/)<br/>
 This tutorial walks you through the basics of using pyBullet:
 configuring the world, stepping the simulation,
 understanding the robot arm and its description in the URDF format,
 resetting the joints,
 and finally controlling the motors to simulate the robot's motion.
 
-2. [Simple Pick and Place](./simple-pick-and-place/README.md)<br/>
+2. [Simple Pick and Place](./simple-pick-and-place/)<br/>
 In this tutorial, you will learn about configuration space and task space, 
 and how to use forward and inverse kinematics to get from one to the other.
 You will then use these methods to implement a simple pick-and-place task.
